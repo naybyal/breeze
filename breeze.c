@@ -17,7 +17,7 @@ void enableRawMode() {
     struct termios raw = orig_termios;
 
     tcgetattr(STDERR_FILENO, &raw);
-
+    raw.c_lflag &= ~(IXON); // disables Ctrl+S and Ctrl+Q
     raw.c_lflag &= ~(ECHO | ICANON | ISIG);
     /*  
         ICANON comes from <termios.h>. 
