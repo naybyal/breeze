@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <termios.h>
 
@@ -17,9 +18,18 @@ void enableRawMode() {
 
     tcgetattr(STDERR_FILENO, &raw);
 
-    raw.c_lflag &= ~(ECHO | ICANON);
-    // ICANON comes from <termios.h>. Input flags (the ones in the c_iflag field) generally start with I like ICANON does. However, ICANON is not an input flag, it’s a “local” flag in the c_lflag field. 
-
+    raw.c_lflag &= ~(ECHO | ICANON | ISIG);
+    /*  
+        ICANON comes from <termios.h>. 
+        Input flags (the ones in the c_iflag field) generally start with I like ICANON does. 
+        However, ICANON is not an input flag, it’s a “local” flag in the c_lflag field. 
+    */
+    /*
+        ISIG comes from <termios.h>. 
+        Like ICANON, it starts with I but isn’t an input flag.
+        Now Ctrl-C can be read as a 3 byte and Ctrl-Z can be read as a 26 byte.
+        This also disables Ctrl-Y on macOS, which is like Ctrl-Z except it waits for the program to read input before suspending it.
+    */
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
     /*
         Terminal attributes can be read into a termios struct by tcgetattr(). 
@@ -43,6 +53,13 @@ int main() {
 
     enableRawMode();
     char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q');
+    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
+        // disabling key press
+        if (iscntrl(c)) {
+            printf("%d\n", c);
+        } else {
+            printf("%d ('%c')\n", c, c);
+        }
+    }
     return 0;
 }
