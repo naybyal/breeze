@@ -1,10 +1,19 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 
+struct termios orig_termios;
+
+void disableRawMode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+}
+
 //  to turn off echoing...
 void enableRawMode() {
-    struct termios raw;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    atexit(disableRawMode); //  disable raw mode at exit
+    struct termios raw = orig_termios;
 
     tcgetattr(STDERR_FILENO, &raw);
 
