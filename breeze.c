@@ -17,7 +17,8 @@ void enableRawMode() {
 
     tcgetattr(STDERR_FILENO, &raw);
 
-    raw.c_lflag &= ~(ECHO);
+    raw.c_lflag &= ~(ECHO | ICANON);
+    // ICANON comes from <termios.h>. Input flags (the ones in the c_iflag field) generally start with I like ICANON does. However, ICANON is not an input flag, it’s a “local” flag in the c_lflag field. 
 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
     /*
@@ -38,7 +39,7 @@ void enableRawMode() {
 }
 
 int main() {
-    printf("Hello! Breeze is a Text Editor written in C\nPress 'q' and Enter to quit!\n\n");
+    printf("Hello! Breeze is a Text Editor written in C\nPress 'q' to quit!\n\n");
 
     enableRawMode();
     char c;
