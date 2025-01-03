@@ -10,6 +10,7 @@
 #include <sys/types.h>
 // DEFINES
 #define BREEZE_VERSION "0.0.1"
+#define BREEZE_TAB_STOP 8
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
@@ -177,14 +178,28 @@ int getWindowSize(int *rows, int *cols) {
 }
 //  ROW OPERATIONS
 void editorUpdateRow(erow *row) {
-    free(row->render);
-    row->render = malloc(row->size + 1);
-
     int j;
+    int tabs = 0;
+    
+    
+    for (j = 0; j < row->size; j++) { 
+        if (row->chars[j] == '\t')
+            tabs++;
+    }
+
+    free(row->render);
+    row->render = malloc(row->size + tabs*(BREEZE_TAB_STOP - 1) + 1);
+
     int idx = 0;
 
     for (j = 0; j < row->size; j++) {
-        row->render[idx++] = row->chars[j];
+        if (row->chars[j] == '\t') {
+            row->render[idx++] = ' ';
+            while (idx % BREEZE_TAB_STOP != 0)
+                row->render[idx++] = ' ';
+        }
+        else
+            row->render[idx++] = row->chars[j];
     }
 
     row->render[idx] = '\0';
