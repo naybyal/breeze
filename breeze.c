@@ -2,17 +2,26 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <errno.h>
 #include <termios.h>
 
 struct termios orig_termios;
 
+void die(const char *s) {
+    perror(s);
+    exit(1);
+}
+
 void disableRawMode() {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) == -1) 
+        die("tcsetattr");
 }
 
 //  to turn off echoing...
 void enableRawMode() {
-    tcgetattr(STDIN_FILENO, &orig_termios);
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+        die("tcgetattr");
+    }
     atexit(disableRawMode); //  disable raw mode at exit
     struct termios raw = orig_termios;
 
@@ -46,7 +55,13 @@ void enableRawMode() {
         ISTRIP causes the 8th bit of each input byte to be stripped, meaning it will set it to 0. This is probably already turned off.
         CS8 is not a flag, it is a bit mask with multiple bits, which we set using the bitwise-OR (|) operator unlike all the flags we are turning off. It sets the character size (CS) to 8 bits per byte. On my system, it’s already set that way.
     */
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+
+    //   timeout for read()
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 1;
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) 
+        die("tcsetattr");
     /*
         Terminal attributes can be read into a termios struct by tcgetattr(). 
         After modifying them, you can then apply them to the terminal using tcsetattr(). 
@@ -69,14 +84,30 @@ int main() {
     printf("Hello! Breeze is a Text Editor written in C\nPress 'q' to quit!\n\n");
 
     enableRawMode();
-    char c;
-    while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
-        // disabling key press
+    // char c;
+    // while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
+    //     // disabling key press
+    //     if (iscntrl(c)) {
+    //         printf("%d\r\n", c);
+    //     } else {
+    //         printf("%d ('%c')\r\n", c, c);
+    //     }
+    // }
+
+    while (1) {
+        char c = '\0';
+        if (read(STDIN_FILENO, &c, 1) == -1 && errno != EAGAIN)
+            die("read");
         if (iscntrl(c)) {
             printf("%d\r\n", c);
         } else {
             printf("%d ('%c')\r\n", c, c);
         }
+
+        if (c == 'q')
+            break;
     }
+
+
     return 0;
 }
