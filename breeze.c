@@ -1,3 +1,4 @@
+// INCLUDES
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -5,8 +6,10 @@
 #include <errno.h>
 #include <termios.h>
 
+// DATA
 struct termios orig_termios;
 
+// TERMINAL
 void die(const char *s) {
     perror(s);
     exit(1);
@@ -80,6 +83,7 @@ void enableRawMode() {
 
 }
 
+//  INIT
 int main() {
     printf("Hello! Breeze is a Text Editor written in C\nPress 'q' to quit!\n\n");
 
