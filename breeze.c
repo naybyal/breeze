@@ -17,7 +17,13 @@ void enableRawMode() {
     struct termios raw = orig_termios;
 
     tcgetattr(STDERR_FILENO, &raw);
-    // raw.c_lflag &= ~(IXON); // disables Ctrl+S and Ctrl+Q
+    raw.c_lflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON ); // disables Ctrl+S and Ctrl+Q
+    raw.c_lflag &= ~(OPOST);
+    /*
+        OPOST comes from <termios.h>.
+        O means it’s an output flag, and I assume POST stands for “post-processing of output”
+    */
+    raw.c_lflag |= (CS8);
     raw.c_lflag &= ~(IXON | ECHO | ICANON | IEXTEN | ISIG);
     /*  
         ICANON comes from <termios.h>. 
@@ -29,6 +35,16 @@ void enableRawMode() {
         Like ICANON, it starts with I but isn’t an input flag.
         Now Ctrl-C can be read as a 3 byte and Ctrl-Z can be read as a 26 byte.
         This also disables Ctrl-Y on macOS, which is like Ctrl-Z except it waits for the program to read input before suspending it.
+    */
+   /*
+        ICRNL comes from <termios.h>. 
+        The I stands for “input flag”, CR stands for “carriage return”, and NL stands for “new line”.
+   */
+    /*
+        When BRKINT is turned on, a break condition will cause a SIGINT signal to be sent to the program, like pressing Ctrl-C.
+        INPCK enables parity checking, which doesn’t seem to apply to modern terminal emulators.
+        ISTRIP causes the 8th bit of each input byte to be stripped, meaning it will set it to 0. This is probably already turned off.
+        CS8 is not a flag, it is a bit mask with multiple bits, which we set using the bitwise-OR (|) operator unlike all the flags we are turning off. It sets the character size (CS) to 8 bits per byte. On my system, it’s already set that way.
     */
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
     /*
@@ -57,9 +73,9 @@ int main() {
     while (read(STDIN_FILENO, &c, 1) == 1 && c != 'q') {
         // disabling key press
         if (iscntrl(c)) {
-            printf("%d\n", c);
+            printf("%d\r\n", c);
         } else {
-            printf("%d ('%c')\n", c, c);
+            printf("%d ('%c')\r\n", c, c);
         }
     }
     return 0;
