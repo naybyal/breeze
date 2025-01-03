@@ -18,7 +18,7 @@ void enableRawMode() {
 
     tcgetattr(STDERR_FILENO, &raw);
     // raw.c_lflag &= ~(IXON); // disables Ctrl+S and Ctrl+Q
-    raw.c_lflag &= ~(IXON |ECHO | ICANON | ISIG);
+    raw.c_lflag &= ~(IXON | ECHO | ICANON | IEXTEN | ISIG);
     /*  
         ICANON comes from <termios.h>. 
         Input flags (the ones in the c_iflag field) generally start with I like ICANON does. 
